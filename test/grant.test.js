@@ -153,7 +153,11 @@ test.after(async () => {
   if (testServerInstance) {
     await testServerInstance.close();
   }
-  await fsp.rm(TEST_BASE_DIR, { recursive: true, force: true });
+  try {
+    await fsp.rm(TEST_BASE_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch (err) {
+    // Ignore cleanup error on Windows
+  }
 });
 
 test('validateGrantRole allows member, admin, and readonly, rejects owner and invalid', () => {
