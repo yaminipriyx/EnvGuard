@@ -1,0 +1,21 @@
+{
+  "name": "envguard",
+  "version": "0.1.0",
+  "description": "Zero-knowledge environment secret management CLI",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "envguard": "bin/envguard.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node bin/envguard.js",
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^13.1.0"
+  }
+}
