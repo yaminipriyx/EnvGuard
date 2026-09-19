@@ -108,12 +108,12 @@ function runSmokeTests() {
     test4.output.includes('not implemented');
   recordResult('Test 4 — project init demo stub returns exit code 1 with not implemented notice', test4Passed);
 
-  // Test 5: Set command stub
-  const test5 = runCli(['set', 'API_KEY']);
+  // Test 5: Set command validation
+  const test5 = runCli(['set', '123_INVALID=secret']);
   const test5Passed =
     test5.status === 1 &&
-    test5.output.includes('not implemented');
-  recordResult('Test 5 — set API_KEY stub returns exit code 1 with not implemented notice', test5Passed);
+    test5.output.includes('Invalid secret key name');
+  recordResult('Test 5 — set validates secret key format and exits with code 1', test5Passed);
 
   // Test 6: Run command stub
   const test6 = runCli(['run', '--', 'node', '-e', '1']);
