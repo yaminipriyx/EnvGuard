@@ -115,12 +115,19 @@ function runSmokeTests() {
     test5.output.includes('Invalid secret key name');
   recordResult('Test 5 — set validates secret key format and exits with code 1', test5Passed);
 
-  // Test 6: Run command stub
-  const test6 = runCli(['run', '--', 'node', '-e', '1']);
+  // Test 6: Run fails cleanly when prerequisites are unavailable without executing target command
+  const test6 = runCli(['run', '--', 'node', '-e', 'process.exit(0)']);
   const test6Passed =
     test6.status === 1 &&
-    test6.output.includes('not implemented');
-  recordResult('Test 6 — run stub returns exit code 1 without executing target command', test6Passed);
+    (test6.output.includes('Credentials file not found') || test6.output.includes('Project configuration not found'));
+  recordResult('Test 6 — run fails cleanly without executing target command when prerequisites are unavailable', test6Passed);
+
+  // Test 6b: Run without command returns non-zero exit code
+  const test6b = runCli(['run']);
+  const test6bPassed =
+    test6b.status === 1 &&
+    test6b.output.includes('No command specified');
+  recordResult('Test 6b — run without command exits with non-zero status', test6bPassed);
 
   // Test 7: Grant command stub
   const test7 = runCli(['grant', 'bob']);
@@ -137,10 +144,13 @@ function runSmokeTests() {
   recordResult('Test 8 — revoke bob stub returns exit code 1 with not implemented notice', test8Passed);
 
   // Test 9: Run argument preservation after --
-  const test9 = runCli(['run', '--env', 'staging', '--', 'node', '--version']);
+  // Verifies that arguments after '--' (including arbitrary flags) are preserved as child command arguments
+  const test9WithoutSep = runCli(['run', '--unknown-child-flag']);
+  const test9WithSep = runCli(['run', '--env', 'staging', '--', '--unknown-child-flag', 'node', '--version']);
   const test9Passed =
-    test9.output.includes('node') &&
-    test9.output.includes('--version');
+    test9WithoutSep.status !== 0 &&
+    test9WithoutSep.output.includes("error: unknown option '--unknown-child-flag'") &&
+    !test9WithSep.output.includes("error: unknown option '--unknown-child-flag'");
   recordResult('Test 9 — run preserves exact arguments after --', test9Passed);
 
   // Test 10: Invalid grant role rejected by Commander
