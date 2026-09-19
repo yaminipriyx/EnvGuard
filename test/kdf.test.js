@@ -142,7 +142,14 @@ describe('Key Derivation Functions', () => {
       () => {
         kdf.pbkdf2Sha256('valid-passphrase-length', crypto.randomBytes(10), 1000, 32);
       },
-      /Invalid salt: must be a Buffer of at least 16 bytes/
+      /Invalid salt: must be a Buffer of exactly 16 bytes/
+    );
+
+    assert.throws(
+      () => {
+        kdf.pbkdf2Sha256('valid-passphrase-length', crypto.randomBytes(24), 1000, 32);
+      },
+      /Invalid salt: must be a Buffer of exactly 16 bytes/
     );
 
     assert.throws(

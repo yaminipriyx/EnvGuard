@@ -103,16 +103,29 @@ export function openSecretEnvelope(envelope, dek, expectedVaultId, expectedDekVe
     throw new Error('AAD mismatch: stored AAD does not match expected canonical AAD');
   }
 
-  if (typeof envelope.iv !== 'string' || envelope.iv.length !== 24) {
+  const hex24Regex = /^[0-9a-fA-F]{24}$/;
+  if (typeof envelope.iv !== 'string' || !hex24Regex.test(envelope.iv)) {
     throw new TypeError('Invalid envelope IV: must be a 24-character hex string');
   }
 
-  if (typeof envelope.tag !== 'string' || envelope.tag.length !== 32) {
+  const hex32Regex = /^[0-9a-fA-F]{32}$/;
+  if (typeof envelope.tag !== 'string' || !hex32Regex.test(envelope.tag)) {
     throw new TypeError('Invalid envelope tag: must be a 32-character hex string');
   }
 
   if (typeof envelope.ciphertext !== 'string') {
     throw new TypeError('Invalid envelope ciphertext: must be a string');
+  }
+
+  if (envelope.ciphertext.length % 2 !== 0) {
+    throw new TypeError('Invalid envelope ciphertext: hex length must be even');
+  }
+
+  if (envelope.ciphertext.length > 0) {
+    const hexRegex = /^[0-9a-fA-F]+$/;
+    if (!hexRegex.test(envelope.ciphertext)) {
+      throw new TypeError('Invalid envelope ciphertext: must be a valid hex string');
+    }
   }
 
   const ivBuffer = Buffer.from(envelope.iv, 'hex');
@@ -201,15 +214,18 @@ export function openWrappedDekEnvelope(envelope, recipientPrivateKeyJwk, expecte
     throw new Error('AAD mismatch: stored AAD does not match expected canonical AAD');
   }
 
-  if (typeof envelope.iv !== 'string' || envelope.iv.length !== 24) {
+  const hex24Regex = /^[0-9a-fA-F]{24}$/;
+  if (typeof envelope.iv !== 'string' || !hex24Regex.test(envelope.iv)) {
     throw new TypeError('Invalid envelope IV: must be a 24-character hex string');
   }
 
-  if (typeof envelope.tag !== 'string' || envelope.tag.length !== 32) {
+  const hex32Regex = /^[0-9a-fA-F]{32}$/;
+  if (typeof envelope.tag !== 'string' || !hex32Regex.test(envelope.tag)) {
     throw new TypeError('Invalid envelope tag: must be a 32-character hex string');
   }
 
-  if (typeof envelope.encryptedDek !== 'string' || envelope.encryptedDek.length !== 64) {
+  const hex64Regex = /^[0-9a-fA-F]{64}$/;
+  if (typeof envelope.encryptedDek !== 'string' || !hex64Regex.test(envelope.encryptedDek)) {
     throw new TypeError('Invalid envelope encryptedDek: must be a 64-character hex string');
   }
 
@@ -258,6 +274,7 @@ export function createPrivateKeyEnvelope(privateKeyJwk, passphrase) {
     encrypted = aes.encrypt(serializedPrivateKey, kek);
   } finally {
     kek.fill(0);
+    serializedPrivateKey.fill(0);
   }
 
   return {
@@ -311,6 +328,34 @@ export function openPrivateKeyEnvelope(envelope, passphrase) {
     throw new Error('Unsupported key envelope cipher algorithm');
   }
 
+  if (typeof envelope.kdf.iterations !== 'number' || envelope.kdf.iterations <= 0 || !Number.isInteger(envelope.kdf.iterations)) {
+    throw new TypeError('Invalid key envelope iterations: must be a positive integer');
+  }
+
+  const hexSaltRegex = /^[0-9a-fA-F]{32}$/;
+  if (typeof envelope.kdf.salt !== 'string' || !hexSaltRegex.test(envelope.kdf.salt)) {
+    throw new TypeError('Invalid key envelope salt: must be an exact 32-character hex string (16 bytes)');
+  }
+
+  const hex24Regex = /^[0-9a-fA-F]{24}$/;
+  if (typeof envelope.cipher.iv !== 'string' || !hex24Regex.test(envelope.cipher.iv)) {
+    throw new TypeError('Invalid key envelope IV: must be a 24-character hex string');
+  }
+
+  const hex32Regex = /^[0-9a-fA-F]{32}$/;
+  if (typeof envelope.cipher.tag !== 'string' || !hex32Regex.test(envelope.cipher.tag)) {
+    throw new TypeError('Invalid key envelope tag: must be a 32-character hex string');
+  }
+
+  if (typeof envelope.cipher.ciphertext !== 'string' || envelope.cipher.ciphertext.length % 2 !== 0) {
+    throw new TypeError('Invalid key envelope ciphertext: must be an even-length hex string');
+  }
+
+  const hexRegex = /^[0-9a-fA-F]+$/;
+  if (!hexRegex.test(envelope.cipher.ciphertext)) {
+    throw new TypeError('Invalid key envelope ciphertext: must be a valid hex string');
+  }
+
   const saltBuffer = Buffer.from(envelope.kdf.salt, 'hex');
   const iterations = envelope.kdf.iterations;
   const kek = kdf.pbkdf2Sha256(passphrase, saltBuffer, iterations, 32);
@@ -331,6 +376,8 @@ export function openPrivateKeyEnvelope(envelope, passphrase) {
     privateKeyJwk = JSON.parse(decryptedPlaintext.toString('utf8'));
   } catch (err) {
     throw new Error('Decrypted private key payload is not valid JSON');
+  } finally {
+    decryptedPlaintext.fill(0);
   }
 
   const isVerified = ecdh.verifyKeyPair(privateKeyJwk, envelope.publicKey);

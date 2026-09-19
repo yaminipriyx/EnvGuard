@@ -37,6 +37,11 @@ function validatePublicKeyJwk(jwk) {
   if (rawBytes.length !== 32) {
     throw new TypeError('Invalid public key: x coordinate must decode to exactly 32 bytes');
   }
+
+  const base64urlRegex = /^[A-Za-z0-9_-]{43}$/;
+  if (!base64urlRegex.test(jwk.x)) {
+    throw new TypeError('Invalid public key: x coordinate must be a valid 43-character base64url string');
+  }
 }
 
 /**
@@ -64,6 +69,11 @@ function validatePrivateKeyJwk(jwk) {
   const rawBytes = Buffer.from(jwk.d, 'base64url');
   if (rawBytes.length !== 32) {
     throw new TypeError('Invalid private key: d coordinate must decode to exactly 32 bytes');
+  }
+
+  const base64urlRegex = /^[A-Za-z0-9_-]{43}$/;
+  if (!base64urlRegex.test(jwk.d)) {
+    throw new TypeError('Invalid private key: d coordinate must be a valid 43-character base64url string');
   }
 }
 
@@ -185,6 +195,7 @@ export function deriveSharedSecret(privateKeyJwk, publicKeyJwk) {
 
   const zeroBuffer = Buffer.alloc(32, 0);
   if (crypto.timingSafeEqual(sharedSecret, zeroBuffer)) {
+    sharedSecret.fill(0);
     throw new Error('Invalid shared secret: all-zero result rejected');
   }
 

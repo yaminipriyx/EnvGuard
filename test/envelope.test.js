@@ -324,5 +324,74 @@ describe('Cryptographic Envelopes', () => {
         /Decryption failed/
       );
     });
+
+    it('tampering: fails when private key ciphertext is corrupted', () => {
+      const keyPair = ecdh.generateKeyPair();
+      const passphrase = 'correct-passphrase-1234';
+      const keyEnvelope = envelope.createPrivateKeyEnvelope(keyPair.privateKey, passphrase);
+
+      let flippedChar = '0';
+      if (keyEnvelope.cipher.ciphertext[0] === '0') {
+        flippedChar = '1';
+      }
+      keyEnvelope.cipher.ciphertext = flippedChar + keyEnvelope.cipher.ciphertext.slice(1);
+
+      assert.throws(
+        () => {
+          envelope.openPrivateKeyEnvelope(keyEnvelope, passphrase);
+        },
+        /Decryption failed/
+      );
+    });
+
+    it('tampering: fails when private key auth tag is corrupted', () => {
+      const keyPair = ecdh.generateKeyPair();
+      const passphrase = 'correct-passphrase-1234';
+      const keyEnvelope = envelope.createPrivateKeyEnvelope(keyPair.privateKey, passphrase);
+
+      let flippedChar = '0';
+      if (keyEnvelope.cipher.tag[0] === '0') {
+        flippedChar = '1';
+      }
+      keyEnvelope.cipher.tag = flippedChar + keyEnvelope.cipher.tag.slice(1);
+
+      assert.throws(
+        () => {
+          envelope.openPrivateKeyEnvelope(keyEnvelope, passphrase);
+        },
+        /Decryption failed/
+      );
+    });
+
+    it('tampering: fails when public key does not correspond to private key', () => {
+      const keyPair1 = ecdh.generateKeyPair();
+      const keyPair2 = ecdh.generateKeyPair();
+      const passphrase = 'correct-passphrase-1234';
+      const keyEnvelope = envelope.createPrivateKeyEnvelope(keyPair1.privateKey, passphrase);
+
+      keyEnvelope.publicKey = keyPair2.publicKey;
+
+      assert.throws(
+        () => {
+          envelope.openPrivateKeyEnvelope(keyEnvelope, passphrase);
+        },
+        /Private key integrity check failed/
+      );
+    });
+
+    it('tampering: fails when salt is not exactly 32 hex characters (16 bytes)', () => {
+      const keyPair = ecdh.generateKeyPair();
+      const passphrase = 'correct-passphrase-1234';
+      const keyEnvelope = envelope.createPrivateKeyEnvelope(keyPair.privateKey, passphrase);
+
+      keyEnvelope.kdf.salt = keyEnvelope.kdf.salt + 'abcd';
+
+      assert.throws(
+        () => {
+          envelope.openPrivateKeyEnvelope(keyEnvelope, passphrase);
+        },
+        /Invalid key envelope salt: must be an exact 32-character hex string/
+      );
+    });
   });
 });

@@ -103,12 +103,15 @@ export function decrypt(ciphertext, key, iv, tag, aad) {
 
   decipher.setAuthTag(tag);
 
-  let decryptedPart1;
-  let decryptedPart2;
+  let decryptedPart1 = null;
+  let decryptedPart2 = null;
   try {
     decryptedPart1 = decipher.update(ciphertext);
     decryptedPart2 = decipher.final();
   } catch (err) {
+    if (decryptedPart1 !== null) {
+      decryptedPart1.fill(0);
+    }
     throw new Error('Decryption failed: authentication tag verification failed or ciphertext corrupted');
   }
 

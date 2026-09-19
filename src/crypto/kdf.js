@@ -57,6 +57,7 @@ export function hkdfSha512(ikm, salt, info, keylen) {
  */
 export function pbkdf2Sha256(passphrase, salt, iterations, keylen) {
   let passphraseBuffer;
+  let isLocalBuffer = false;
   if (Buffer.isBuffer(passphrase)) {
     if (passphrase.length < 12) {
       throw new TypeError('Passphrase must be at least 12 characters in length');
@@ -67,22 +68,40 @@ export function pbkdf2Sha256(passphrase, salt, iterations, keylen) {
       throw new TypeError('Passphrase must be at least 12 characters in length');
     }
     passphraseBuffer = Buffer.from(passphrase, 'utf8');
+    isLocalBuffer = true;
   } else {
     throw new TypeError('Invalid passphrase: must be a string or Buffer');
   }
 
-  if (!Buffer.isBuffer(salt) || salt.length < 16) {
-    throw new TypeError('Invalid salt: must be a Buffer of at least 16 bytes');
+  if (!Buffer.isBuffer(salt) || salt.length !== 16) {
+    if (isLocalBuffer) {
+      passphraseBuffer.fill(0);
+    }
+    throw new TypeError('Invalid salt: must be a Buffer of exactly 16 bytes');
   }
 
   if (typeof iterations !== 'number' || iterations <= 0 || !Number.isInteger(iterations)) {
+    if (isLocalBuffer) {
+      passphraseBuffer.fill(0);
+    }
     throw new TypeError('Invalid iterations: must be a positive integer');
   }
 
   if (typeof keylen !== 'number' || keylen <= 0 || !Number.isInteger(keylen)) {
+    if (isLocalBuffer) {
+      passphraseBuffer.fill(0);
+    }
     throw new TypeError('Invalid keylen: must be a positive integer');
   }
 
-  const derived = crypto.pbkdf2Sync(passphraseBuffer, salt, iterations, keylen, 'sha256');
+  let derived;
+  try {
+    derived = crypto.pbkdf2Sync(passphraseBuffer, salt, iterations, keylen, 'sha256');
+  } finally {
+    if (isLocalBuffer) {
+      passphraseBuffer.fill(0);
+    }
+  }
+
   return Buffer.from(derived);
 }
