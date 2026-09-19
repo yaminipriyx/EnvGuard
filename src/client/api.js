@@ -606,3 +606,46 @@ export async function getVaultSecrets(serverUrl, vaultId, credentials, options) 
 export async function updateVaultSecrets(serverUrl, vaultId, updatePayload, credentials, options) {
   return sendAuthenticatedRequest(serverUrl, 'PUT', `/api/v1/vault/${vaultId}/secrets`, updatePayload, credentials, options);
 }
+
+/**
+ * Fetch a registered user's public identity and fingerprint from the Vault Server.
+ *
+ * @param {string} serverUrl - Vault Server base URL.
+ * @param {string} targetUsername - Username of user to lookup.
+ * @param {object} credentials - Client credentials { username, apiToken, userSalt }.
+ * @param {object} [options] - Optional transport options.
+ * @returns {Promise<object>} User identity { username, publicKey, publicKeyFingerprint, status }.
+ */
+export async function getUser(serverUrl, targetUsername, credentials, options) {
+  return sendAuthenticatedRequest(serverUrl, 'GET', `/api/v1/users/${targetUsername}`, null, credentials, options);
+}
+
+/**
+ * Grant vault access to a user.
+ *
+ * @param {string} serverUrl - Vault Server base URL.
+ * @param {string} vaultId - Vault identifier.
+ * @param {object} grantPayload - { expectedVersion, username, role, wrappedDek, publicKeyFingerprint }.
+ * @param {object} credentials - Client credentials { username, apiToken, userSalt }.
+ * @param {object} [options] - Optional transport options.
+ * @returns {Promise<object>} Updated vault metadata { vaultVersion, dekVersion }.
+ */
+export async function grantVaultMember(serverUrl, vaultId, grantPayload, credentials, options) {
+  return sendAuthenticatedRequest(serverUrl, 'POST', `/api/v1/vault/${vaultId}/members`, grantPayload, credentials, options);
+}
+
+/**
+ * Revoke vault access from a user and commit rotated vault state.
+ *
+ * @param {string} serverUrl - Vault Server base URL.
+ * @param {string} vaultId - Vault identifier.
+ * @param {string} targetUsername - Username of member to revoke.
+ * @param {object} revokePayload - { expectedVersion, newBlob, newWrappedDeks }.
+ * @param {object} credentials - Client credentials { username, apiToken, userSalt }.
+ * @param {object} [options] - Optional transport options.
+ * @returns {Promise<object>} Updated vault metadata { vaultVersion, dekVersion }.
+ */
+export async function revokeVaultMember(serverUrl, vaultId, targetUsername, revokePayload, credentials, options) {
+  return sendAuthenticatedRequest(serverUrl, 'DELETE', `/api/v1/vault/${vaultId}/members/${targetUsername}`, revokePayload, credentials, options);
+}
+

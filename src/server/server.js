@@ -529,7 +529,8 @@ export function createServer(options) {
         vaultVersion: vault.vaultVersion,
         dekVersion: vault.dekVersion,
         blob: vault.blob,
-        wrappedDeks: vault.wrappedDeks
+        wrappedDeks: vault.wrappedDeks,
+        members: vault.members
       });
       return;
     }

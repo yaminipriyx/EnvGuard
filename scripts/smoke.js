@@ -129,19 +129,19 @@ function runSmokeTests() {
     test6b.output.includes('No command specified');
   recordResult('Test 6b — run without command exits with non-zero status', test6bPassed);
 
-  // Test 7: Grant command stub
+  // Test 7: Grant fails cleanly when prerequisites are unavailable
   const test7 = runCli(['grant', 'bob']);
   const test7Passed =
     test7.status === 1 &&
-    test7.output.includes('not implemented');
-  recordResult('Test 7 — grant bob stub returns exit code 1 with not implemented notice', test7Passed);
+    (test7.output.includes('Credentials file not found') || test7.output.includes('Project configuration not found'));
+  recordResult('Test 7 — grant fails cleanly when prerequisites are unavailable', test7Passed);
 
-  // Test 8: Revoke command stub
+  // Test 8: Revoke fails cleanly when prerequisites are unavailable
   const test8 = runCli(['revoke', 'bob']);
   const test8Passed =
     test8.status === 1 &&
-    test8.output.includes('not implemented');
-  recordResult('Test 8 — revoke bob stub returns exit code 1 with not implemented notice', test8Passed);
+    (test8.output.includes('Credentials file not found') || test8.output.includes('Project configuration not found'));
+  recordResult('Test 8 — revoke fails cleanly when prerequisites are unavailable', test8Passed);
 
   // Test 9: Run argument preservation after --
   // Verifies that arguments after '--' (including arbitrary flags) are preserved as child command arguments
