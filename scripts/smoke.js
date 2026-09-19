@@ -94,12 +94,12 @@ function runSmokeTests() {
     test2.stdout.trim() === packageInfo.version;
   recordResult('Test 2 — version matches package.json', test2Passed);
 
-  // Test 3: Init command stub
-  const test3 = runCli(['init']);
+  // Test 3: Init command validation
+  const test3 = runCli(['init', 'invalid@user!']);
   const test3Passed =
     test3.status === 1 &&
-    test3.output.includes('not implemented');
-  recordResult('Test 3 — init stub returns exit code 1 with not implemented notice', test3Passed);
+    test3.output.includes('Invalid username');
+  recordResult('Test 3 — init validates username format and exits with code 1', test3Passed);
 
   // Test 4: Project init command stub
   const test4 = runCli(['project', 'init', 'demo']);
